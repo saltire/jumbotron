@@ -12,7 +12,6 @@ public class BlockListener implements Listener {
 
 	public BlockListener(Jumbotron jumbo) {
 		plugin = jumbo;
-		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	}
 	
 	@EventHandler
@@ -23,9 +22,9 @@ public class BlockListener implements Listener {
 		int z = block.getZ();
 		if (plugin.coordsInArea(x, y, z)) {
 			int[] coords = plugin.areaCoords(x, y, z);
-			plugin.sendPixel(new byte[] {
-				(byte) 0, (byte) 0, (byte) 0,
-				(byte) coords[0], (byte) coords[1]
+			plugin.updatePixel(new byte[] {
+				(byte) coords[0], (byte) coords[1],
+				(byte) 0, (byte) 0, (byte) 0
 			});
 		}
 	}
@@ -39,9 +38,9 @@ public class BlockListener implements Listener {
 		if (plugin.coordsInArea(x, y, z)) {
 			int[] color = plugin.getBlockColor(block);
 			int[] coords = plugin.areaCoords(x, y, z);
-			plugin.sendPixel(new byte[] {
-				(byte) color[0], (byte) color[1], (byte) color[2],
-				(byte) coords[0], (byte) coords[1]
+			plugin.updatePixel(new byte[] {
+				(byte) coords[0], (byte) coords[1],
+				(byte) color[0], (byte) color[1], (byte) color[2]
 			});
 		}
 	}

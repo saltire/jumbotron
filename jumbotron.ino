@@ -17,16 +17,15 @@ void setup() {
 
 void loop() {
   while (Serial.available() >= 5) {
+    uint8_t x = Serial.read();
+    uint8_t y = Serial.read();
     uint8_t r = Serial.read();
     uint8_t g = Serial.read();
     uint8_t b = Serial.read();
-    uint8_t x = Serial.read();
-    uint8_t y = Serial.read();
     
     matrix.drawPixel(x, y, matrix.Color888(r, g, b, 1));
 
-    Serial.write(r);
-    Serial.write(g);
-    Serial.write(b);
+    byte coords[] = {byte(x), byte(y)};
+    Serial.write(coords, 2);
   }
 }

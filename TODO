@@ -1,0 +1,9 @@
+split arduino class into separate file
+
+turn sendnextpixel into a runnable and schedule it at a frequency
+proportional to the arduino's baud rate
+
+rename bytes to pixels and turn it into a deque
+
+add refresh command
+

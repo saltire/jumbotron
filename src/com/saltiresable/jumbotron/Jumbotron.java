@@ -4,11 +4,12 @@ import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.Wool;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public final class Jumbotron extends JavaPlugin {
 	
@@ -50,15 +51,17 @@ public final class Jumbotron extends JavaPlugin {
 				by = y - v;
 				int[] color = getBlockColor(world.getBlockAt(bx, by, bz));
 				bytes[u * h + v] = new byte[] {
-					(byte) color[0], (byte) color[1], (byte) color[2],
-					(byte) u, (byte) v
+					(byte) u, (byte) v,
+					(byte) color[0], (byte) color[1], (byte) color[2]
 				};
 			}
 		}
 		
-		sendNextPixel();
+		//sendNextPixel();
 		
 		getServer().getPluginManager().registerEvents(new BlockListener(this), this);
+		getServer().getScheduler().runTaskTimer(this, new SerialMonitor(arduino), 0, 40);
+		
 		getLogger().info("Enabled Jumbotron");
 	}
 	
@@ -107,17 +110,6 @@ public final class Jumbotron extends JavaPlugin {
 		}
 	}
 	
-	@Override
-	public void onDisable() {
-		arduino.disable();
-		getLogger().info("Disabled Jumbotron");
-	}
-	
-	public boolean sendPixel(byte[] p) {
-		//getLogger().info("Sending pixel:"+p[3]+","+p[4]+": "+p[0]+","+p[1]+","+p[2]);
-		return arduino.sendBytes(p);
-	}
-	
 	private void sendNextPixel() {
 		if (to_send > 0) {
 			byte[] p = bytes[w * h - to_send];
@@ -127,22 +119,53 @@ public final class Jumbotron extends JavaPlugin {
 		}
 	}
 	
+	public boolean sendPixel(byte[] p) {
+		getLogger().info("Sending pixel:"+p[0]+","+p[1]+": "+p[2]+","+p[3]+","+p[4]);
+		return arduino.sendBytes(p);
+	}
+	
+	private void onConfirmPixelSent(byte[] coords) {
+		getLogger().info("Acknowledged pixel update at " + coords[0] + "," + coords[1]);
+    	sendNextPixel();
+	}
+	
+	private class SerialMonitor extends BukkitRunnable {
+		private ArduinoJSSC arduino;
+		
+		public SerialMonitor(ArduinoJSSC ard) {
+			arduino = ard;
+		}
+		
+		public void run() {
+			if (arduino.portOpen()) {
+				if (to_send == w * h) {
+					sendNextPixel();
+				}
+			} else {
+				arduino.openPort();
+			}
+		}
+	}
+	
 	private class ArduinoJSSC implements SerialPortEventListener {
 		
 		SerialPort serialPort;
-		boolean open = false;
+		int baudRate = 9600;
 		
 		public ArduinoJSSC(String portName) {
 			serialPort = new SerialPort(portName);
-			open = openPort();
+		}
+		
+		public boolean portOpen() {
+			return serialPort.isOpened();
 		}
 		
 		private boolean openPort() {
 			try {
 				serialPort.openPort();
-				serialPort.setParams(9600, 8, 1, 0);
-				serialPort.setEventsMask(SerialPort.MASK_RXCHAR);
-				serialPort.addEventListener(this);
+				serialPort.setParams(baudRate, 8, 1, 0);
+				serialPort.addEventListener(this, SerialPort.MASK_RXCHAR);
+				getLogger().info("Opened serial port successfully.");
 				return true;
 			} catch (SerialPortException e) {
 				getLogger().severe(e.getMessage());
@@ -152,24 +175,17 @@ public final class Jumbotron extends JavaPlugin {
 		
 		@Override
 		public void serialEvent(SerialPortEvent event) {
-			if (event.isRXCHAR()) {
-				if (event.getEventValue() > 0) {
-					try {
-						serialPort.readHexString(3);
-						//getLogger().info(serialPort.readHexString(3));
-			        	sendNextPixel();
-			        	
-			        	//String string = serialPort.readString();
-			            //getLogger().info("Got string: " + string);
-			        } catch (SerialPortException e) {
-			        	getLogger().severe(e.getMessage());
-			        }
+			if (event.getEventValue() >= 2) {
+				try {
+					onConfirmPixelSent(serialPort.readBytes(2));
+		        } catch (SerialPortException e) {
+		        	getLogger().severe(e.getMessage());
 		        }
-		    }
+	        }
 		}
 		
 		public boolean sendBytes(byte[] bytes) {
-			if (!open && !openPort()) {
+			if (!serialPort.isOpened()) {
 				return false;
 			}
 			try {
@@ -188,5 +204,11 @@ public final class Jumbotron extends JavaPlugin {
 				getLogger().severe(e.getMessage());
 			}
 		}
+	}
+	
+	@Override
+	public void onDisable() {
+		arduino.disable();
+		getLogger().info("Disabled Jumbotron");
 	}
 }
