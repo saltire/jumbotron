@@ -1,4 +1,4 @@
-package com.saltiresable.minebanner;
+package com.saltiresable.jumbotron;
 
 import org.bukkit.block.Block;
 import org.bukkit.event.Listener;
@@ -8,10 +8,10 @@ import org.bukkit.event.block.BlockPlaceEvent;
 
 public class BlockListener implements Listener {
 	
-	MineBanner plugin;
+	Jumbotron plugin;
 
-	public BlockListener(MineBanner banner) {
-		plugin = banner;
+	public BlockListener(Jumbotron jumbo) {
+		plugin = jumbo;
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	}
 	

@@ -1,4 +1,4 @@
-package com.saltiresable.minebanner;
+package com.saltiresable.jumbotron;
 
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
@@ -10,7 +10,7 @@ import org.bukkit.block.Block;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.Wool;
 
-public final class MineBanner extends JavaPlugin {
+public final class Jumbotron extends JavaPlugin {
 	
 	ArduinoJSSC arduino = new ArduinoJSSC("COM5");
 	
@@ -28,7 +28,7 @@ public final class MineBanner extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
-		getLogger().info("Enabled MineBanner");
+		getLogger().info("Enabled Jumbotron");
 		
 		World world = getServer().getWorld(worldname);
 		
@@ -116,7 +116,7 @@ public final class MineBanner extends JavaPlugin {
 		} catch (SerialPortException e) {
 			getLogger().severe(e.getMessage());
 		}
-		getLogger().info("Disabled MineBanner");
+		getLogger().info("Disabled Jumbotron");
 	}
 	
 	private void initPixel() {
