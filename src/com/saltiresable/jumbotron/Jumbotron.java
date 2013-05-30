@@ -1,5 +1,6 @@
 package com.saltiresable.jumbotron;
 
+import java.util.ArrayDeque;
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
@@ -10,10 +11,9 @@ import org.bukkit.material.MaterialData;
 import org.bukkit.material.Wool;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 public final class Jumbotron extends JavaPlugin {
-	
-	ArduinoJSSC arduino = new ArduinoJSSC("COM5");
 	
 	String worldname = "uberworld";
 	int x = 278;
@@ -24,8 +24,12 @@ public final class Jumbotron extends JavaPlugin {
 	enum Dir { NORTH, EAST, SOUTH, WEST }
 	Dir dir = Dir.EAST;
 	
-	byte[][] bytes = new byte[w * h][5];
-	int to_send = w * h;
+	ArrayDeque<byte[]> pixelQueue = new ArrayDeque<byte[]>(w * h);
+	
+	ArduinoJSSC arduino = new ArduinoJSSC("COM5");
+	BukkitTask monitor;
+	boolean confirmed = false;
+	boolean waiting = false;
 	
 	@Override
 	public void onEnable() {
@@ -50,17 +54,15 @@ public final class Jumbotron extends JavaPlugin {
 			for (int v = 0; v < h; v++) {
 				by = y - v;
 				int[] color = getBlockColor(world.getBlockAt(bx, by, bz));
-				bytes[u * h + v] = new byte[] {
-					(byte) u, (byte) v,
-					(byte) color[0], (byte) color[1], (byte) color[2]
-				};
+				pixelQueue.add(new byte[] {
+						(byte) u, (byte) v,
+						(byte) color[0], (byte) color[1], (byte) color[2]
+					});
 			}
 		}
 		
-		//sendNextPixel();
-		
 		getServer().getPluginManager().registerEvents(new BlockListener(this), this);
-		getServer().getScheduler().runTaskTimer(this, new SerialMonitor(arduino), 0, 40);
+		monitor = new SerialMonitor(arduino).runTaskTimer(this, 0, 30);
 		
 		getLogger().info("Enabled Jumbotron");
 	}
@@ -110,22 +112,31 @@ public final class Jumbotron extends JavaPlugin {
 		}
 	}
 	
-	private void sendNextPixel() {
-		if (to_send > 0) {
-			byte[] p = bytes[w * h - to_send];
-			if (sendPixel(p)) {
-				to_send--;
-			}
+	public void updatePixel(byte[] p) {
+		getLogger().info("Adding pixel to queue at "+p[0]+","+p[1]);
+		pixelQueue.add(p);
+		if (!waiting) {
+			sendNextPixel();
 		}
 	}
 	
-	public boolean sendPixel(byte[] p) {
-		getLogger().info("Sending pixel:"+p[0]+","+p[1]+": "+p[2]+","+p[3]+","+p[4]);
-		return arduino.sendBytes(p);
+	private void sendNextPixel() {
+		if (pixelQueue.size() > 0) {
+			byte[] p = pixelQueue.peek();
+			waiting = true;
+			getLogger().info("Sending pixel "+p[0]+","+p[1]+": "+p[2]+","+p[3]+","+p[4]);
+			arduino.sendBytes(p);
+		}
 	}
 	
 	private void onConfirmPixelSent(byte[] coords) {
 		getLogger().info("Acknowledged pixel update at " + coords[0] + "," + coords[1]);
+		if (!confirmed) {
+			confirmed = true;
+			monitor.cancel();
+		}
+		waiting = false;
+		pixelQueue.remove();
     	sendNextPixel();
 	}
 	
@@ -138,11 +149,12 @@ public final class Jumbotron extends JavaPlugin {
 		
 		public void run() {
 			if (arduino.portOpen()) {
-				if (to_send == w * h) {
-					sendNextPixel();
-				}
+				getLogger().info("Attempting to send pixel to new connection.");
+				sendNextPixel();
 			} else {
-				arduino.openPort();
+				if (arduino.openPort()) {
+					getLogger().info("Opened serial port successfully.");
+				}
 			}
 		}
 	}
@@ -165,7 +177,6 @@ public final class Jumbotron extends JavaPlugin {
 				serialPort.openPort();
 				serialPort.setParams(baudRate, 8, 1, 0);
 				serialPort.addEventListener(this, SerialPort.MASK_RXCHAR);
-				getLogger().info("Opened serial port successfully.");
 				return true;
 			} catch (SerialPortException e) {
 				getLogger().severe(e.getMessage());
