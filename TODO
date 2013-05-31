@@ -1,8 +1,4 @@
-- Split Arduino class into separate file
-
 - Turn sendNextPixel() into a Runnable and schedule it at a frequency
 proportional to the Arduino's baud rate
-
-- Add /refresh command
 
 - Find some way to detect a disconnected Arduino

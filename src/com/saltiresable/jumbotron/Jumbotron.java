@@ -8,30 +8,41 @@ import org.bukkit.scheduler.BukkitTask;
 
 public final class Jumbotron extends JavaPlugin {
 	
-	String worldname = "uberworld";
-	int x = 278;
-	int y = 87;
-	int z = -246;
-	int w = 32;
-	int h = 16;
-	Dir dir = Dir.EAST;
-	
-	BlockGrid screen;
-	ArrayDeque<byte[]> pixelQueue = new ArrayDeque<byte[]>();
-	
-	ArduinoJSSC arduino = new ArduinoJSSC(this, "COM5");
+	ArduinoJSSC arduino;
 	BukkitTask monitor;
 	boolean confirmed = false;
 	boolean waiting = false;
 	
+	BlockGrid screen;
+	ArrayDeque<byte[]> pixelQueue = new ArrayDeque<byte[]>();
+	
 	@Override
 	public void onEnable() {
-		getServer().getPluginManager().registerEvents(new BlockListener(this), this);
-		monitor = new SerialMonitor(this).runTaskTimer(this, 0, 30);
-		screen = new BlockGrid(getServer().getWorld(worldname), x, y, z, w, h, dir);
-		updatePixels(screen.getPixels());
+		saveDefaultConfig();
 		
-		getLogger().info("Enabled Jumbotron");
+		if (getServer().getWorld(getConfig().getString("screen.world")) == null) {
+			getLogger().severe("No valid world specified! Aborting.");
+			setEnabled(false);
+		} else {
+		
+			getServer().getPluginManager().registerEvents(new BlockListener(this), this);
+	
+			arduino = new ArduinoJSSC(this, getConfig().getString("arduino.port"));		
+			monitor = new SerialMonitor(this).runTaskTimer(this, 0,
+					getConfig().getInt("arduino.retry-interval") * 20);
+			
+			screen = new BlockGrid(
+					getServer().getWorld(getConfig().getString("screen.world")),
+					getConfig().getInt("screen.x"),
+					getConfig().getInt("screen.y"),
+					getConfig().getInt("screen.z"),
+					getConfig().getInt("screen.width"),
+					getConfig().getInt("screen.height"),
+					Dir.valueOf(getConfig().getString("screen.direction").toUpperCase()));
+			updatePixels(screen.getPixels());
+		
+			getLogger().info("Enabled Jumbotron");
+		}
 	}
 	
 	@Override
@@ -84,7 +95,9 @@ public final class Jumbotron extends JavaPlugin {
 	
 	@Override
 	public void onDisable() {
-		arduino.disable();
+		if (arduino != null) {
+			arduino.disable();
+		}
 		getLogger().info("Disabled Jumbotron");
 	}
 }

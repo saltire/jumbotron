@@ -1,0 +1,11 @@
+screen:
+  world: World
+  x: 0
+  y: 0
+  z: 0
+  width: 32
+  height: 16
+  direction: east
+arduino:
+  port: COM5
+  retry-interval: 2

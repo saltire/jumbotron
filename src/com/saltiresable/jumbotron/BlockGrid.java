@@ -5,7 +5,7 @@ import org.bukkit.block.Block;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.Wool;
 
-enum Dir { NORTH, EAST, SOUTH, WEST }
+enum Dir { NORTH, SOUTH, EAST, WEST }
 
 public class BlockGrid {
 	
@@ -15,7 +15,6 @@ public class BlockGrid {
 	int z;
 	int w;
 	int h;
-	
 	Dir dir;
 	
 	public BlockGrid(World world, int x, int y, int z, int w, int h, Dir dir) {
