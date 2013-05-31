@@ -1,3 +1,9 @@
 name: Jumbotron
 main: com.saltiresable.jumbotron.Jumbotron
 version: 0.1
+
+commands:
+  jumbo:
+    description: Control the Jumbotron display.
+    usage: "Valid uses: /<command> refresh"
+    aliases: [jt, jumbotron] 

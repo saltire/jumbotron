@@ -1,6 +1,5 @@
 package com.saltiresable.jumbotron;
 
-import java.util.ArrayList;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.material.MaterialData;
@@ -29,8 +28,8 @@ public class BlockGrid {
 		this.dir = dir;
 	}
 	
-	public ArrayList<byte[]> getPixels() {
-		ArrayList<byte[]> pixels = new ArrayList<byte[]>(w * h);
+	public byte[][] getPixels() {
+		byte[][] pixels = new byte[w * h][];
 		int bx = x, by = y, bz = z;
 		for (int u = 0; u < w; u++) {
 			switch (dir) {
@@ -50,10 +49,10 @@ public class BlockGrid {
 			for (int v = 0; v < h; v++) {
 				by = y - v;
 				int[] color = getBlockColor(world.getBlockAt(bx, by, bz));
-				pixels.add(new byte[] {
+				pixels[u * h + v] = new byte[] {
 						(byte) u, (byte) v,
 						(byte) color[0], (byte) color[1], (byte) color[2]
-					});
+					};
 			}
 		}
 		return pixels;
