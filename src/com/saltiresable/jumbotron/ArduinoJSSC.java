@@ -32,6 +32,14 @@ public class ArduinoJSSC implements SerialPortEventListener {
 		}
 	}
 	
+	public void closePort() {
+		try {
+			serialPort.closePort();
+		} catch (SerialPortException e) {
+			plugin.getLogger().severe(e.getMessage());
+		}
+	}
+	
 	@Override
 	public void serialEvent(SerialPortEvent event) {
 		if (event.getEventValue() >= 2) {

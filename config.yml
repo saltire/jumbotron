@@ -8,4 +8,5 @@ screen:
   direction: east
 arduino:
   port: COM5
+  enable-on-start: true
   retry-interval: 2
