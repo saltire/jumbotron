@@ -79,7 +79,7 @@ public final class Jumbotron extends JavaPlugin {
 	void updatePixel(byte[] p) {
 		//getLogger().info("Adding pixel to queue at "+p[0]+","+p[1]);
 		pixelQueue.add(p);
-		if (confirmed && !waiting) {
+		if (confirmed) {
 			sendNextPixel();
 		}
 	}
@@ -88,17 +88,22 @@ public final class Jumbotron extends JavaPlugin {
 		for (byte[] p : pixels) {
 			pixelQueue.add(p);
 		}
-		if (confirmed && !waiting) {
+		if (confirmed) {
 			sendNextPixel();
 		}
 	}
 	
 	void sendNextPixel() {
-		if (pixelQueue.size() > 0) {
+		if (!confirmed && pixelQueue.size() > 0) {
 			byte[] p = pixelQueue.peek();
-			waiting = true;
 			//getLogger().info("Sending pixel "+p[0]+","+p[1]+": "+p[2]+","+p[3]+","+p[4]);
 			arduino.sendBytes(p);
+		}
+		else if (confirmed) {
+			while (pixelQueue.size() > 0) {
+				byte[] p = pixelQueue.remove();
+				arduino.sendBytes(p);
+			}
 		}
 	}
 	
@@ -108,10 +113,9 @@ public final class Jumbotron extends JavaPlugin {
 			getLogger().info("Pixel update confirmed.");
 			confirmed = true;
 			monitor.cancel();
+			pixelQueue.remove();
+	    	sendNextPixel();
 		}
-		waiting = false;
-		pixelQueue.remove();
-    	sendNextPixel();
 	}
 	
 	@Override
