@@ -1,5 +1,7 @@
 package com.saltiresable.jumbotron;
 
+import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.bukkit.selections.Selection;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.material.MaterialData;
@@ -15,43 +17,91 @@ public class BlockGrid {
 	int z;
 	int w;
 	int h;
+	int maxw;
+	int maxh;
 	Dir dir;
 	
-	public BlockGrid(World world, int x, int y, int z, int w, int h, Dir dir) {
+	public BlockGrid(World world, int x, int y, int z, int w, int h, int maxw, int maxh, Dir dir) {
 		this.world = world;
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.w = w;
-		this.h = h;
+		this.w = Math.min(w, maxw);
+		this.h = Math.min(h, maxh);
+		this.maxw = maxw;
+		this.maxh = maxh;
 		this.dir = dir;
 	}
 	
+	public BlockGrid(World world, Selection selection, int maxw, int maxh, Dir dir) {
+		this.world = world;
+		this.dir = dir;
+		this.maxw = maxw;
+		this.maxh = maxh;
+		
+		Vector min = selection.getNativeMinimumPoint();
+		Vector max = selection.getNativeMaximumPoint();
+		switch (dir) {
+		case NORTH:
+			x = min.getBlockX();
+			z = max.getBlockZ();
+			w = Math.min(maxw, selection.getWidth());
+			break;
+		case SOUTH:
+			x = max.getBlockX();
+			z = min.getBlockZ();
+			w = Math.min(maxw, selection.getWidth());
+			break;
+		case EAST:
+			x = min.getBlockX();
+			z = min.getBlockZ();
+			w = Math.min(maxw, selection.getLength());
+			break;
+		case WEST:
+			x = max.getBlockX();
+			z = max.getBlockZ();
+			w = Math.min(maxw, selection.getLength());
+			break;
+		}
+		y = max.getBlockY();
+		h = Math.min(maxh, selection.getHeight());
+	}
+	
 	public byte[][] getPixels() {
-		byte[][] pixels = new byte[w * h][];
+		byte[][] pixels = new byte[maxw * maxh][];
 		int bx = x, by = y, bz = z;
-		for (int u = 0; u < w; u++) {
-			switch (dir) {
-			case NORTH:
-				bz = z - u;
-				break;
-			case SOUTH:
-				bz = z + u;
-				break;
-			case EAST:
-				bx = x + u;
-				break;
-			case WEST:
-				bx = x - u;
-				break;
-			}
-			for (int v = 0; v < h; v++) {
-				by = y - v;
-				int[] color = getBlockColor(world.getBlockAt(bx, by, bz));
-				pixels[u * h + v] = new byte[] {
-						(byte) u, (byte) v,
-						(byte) color[0], (byte) color[1], (byte) color[2]
-					};
+		int ou = (maxw - w) / 2;
+		int ov = (maxh - h) / 2;
+		
+		for (int v = 0; v < maxh; v++) {
+			by = y - (v - ov);
+			for (int u = 0; u < maxw; u++) {
+
+				if (u < ou || u >= w + ou || v < ov || v >= h + ov) {
+					pixels[u + v * maxw] = new byte[] { (byte) u, (byte) v, 0, 0, 0 };
+				}
+				else {
+					int bu = u - ou;
+					switch (dir) {
+					case WEST:
+						bz = z - bu;
+						break;
+					case EAST:
+						bz = z + bu;
+						break;
+					case NORTH:
+						bx = x + bu;
+						break;
+					case SOUTH:
+						bx = x - bu;
+						break;
+					}
+					int[] color = getBlockColor(world.getBlockAt(bx, by, bz));
+					pixels[u + v * maxw] = new byte[] {
+							(byte) u, (byte) v,
+							(byte) color[0], (byte) color[1], (byte) color[2]
+						};
+				}
 			}
 		}
 		return pixels;
@@ -74,13 +124,13 @@ public class BlockGrid {
 
 	public boolean coordsInArea(int bx, int by, int bz) {
 		switch (dir) {
-		case NORTH:
-			return (bz <= z && bz > z - w && by <= y && by > y - h && bx == x);
-		case SOUTH:
-			return (bz >= z && bz < z + w && by <= y && by > y - h && bx == x);
-		case EAST:
-			return (bx >= x && bx < x + w && by <= y && by > y - h && bz == z);
 		case WEST:
+			return (bz <= z && bz > z - w && by <= y && by > y - h && bx == x);
+		case EAST:
+			return (bz >= z && bz < z + w && by <= y && by > y - h && bx == x);
+		case NORTH:
+			return (bx >= x && bx < x + w && by <= y && by > y - h && bz == z);
+		case SOUTH:
 			return (bx <= x && bx > x - w && by <= y && by > y - h && bz == z);
 		default:
 			return false;
@@ -88,15 +138,17 @@ public class BlockGrid {
 	}
 	
 	public int[] areaCoords(int bx, int by, int bz) {
+		int ou = (maxw - w) / 2;
+		int ov = (maxh - h) / 2;
 		switch (dir) {
-		case NORTH:
-			return new int[] {z - bz, y - by};
-		case SOUTH:
-			return new int[] {bz - z, y - by};
-		case EAST:
-			return new int[] {bx - x, y - by};
 		case WEST:
-			return new int[] {x - bx, y - by};
+			return new int[] {z - bz + ou, y - by + ov};
+		case EAST:
+			return new int[] {bz - z + ou, y - by + ov};
+		case NORTH:
+			return new int[] {bx - x + ou, y - by + ov};
+		case SOUTH:
+			return new int[] {x - bx + ou, y - by + ov};
 		default:
 			return new int[] {-1, -1};
 		}

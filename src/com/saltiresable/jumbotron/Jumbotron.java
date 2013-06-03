@@ -1,8 +1,10 @@
 package com.saltiresable.jumbotron;
 
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import java.util.ArrayDeque;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.Command;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -18,28 +20,29 @@ public final class Jumbotron extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
-		saveDefaultConfig();
+		getConfig().options().copyDefaults(true);
+		saveConfig();
 		
 		if (getServer().getWorld(getConfig().getString("screen.world")) == null) {
-			getLogger().severe("No valid world specified! Aborting.");
-			setEnabled(false);
-			return;
+			getLogger().warning("No valid world specified!");
+		} else {
+			screen = new BlockGrid(
+					getServer().getWorld(getConfig().getString("screen.world")),
+					getConfig().getInt("screen.x"),
+					getConfig().getInt("screen.y"),
+					getConfig().getInt("screen.z"),
+					getConfig().getInt("screen.width"),
+					getConfig().getInt("screen.height"),
+					getConfig().getInt("display.width"),
+					getConfig().getInt("display.height"),
+					Dir.valueOf(getConfig().getString("screen.view-direction").toUpperCase()));
+			updatePixels(screen.getPixels());
 		}
 		
 		getServer().getPluginManager().registerEvents(new BlockListener(this), this);
 		
-		screen = new BlockGrid(
-				getServer().getWorld(getConfig().getString("screen.world")),
-				getConfig().getInt("screen.x"),
-				getConfig().getInt("screen.y"),
-				getConfig().getInt("screen.z"),
-				getConfig().getInt("screen.width"),
-				getConfig().getInt("screen.height"),
-				Dir.valueOf(getConfig().getString("screen.direction").toUpperCase()));
-		updatePixels(screen.getPixels());
-		
 		arduino = new ArduinoJSSC(this, getConfig().getString("arduino.port"));	
-		if (getConfig().getBoolean("arduino.enable-on-start")) {
+		if (screen != null && getConfig().getBoolean("arduino.enable-on-start")) {
 			startMonitoring();
 		}
 	}
@@ -52,7 +55,7 @@ public final class Jumbotron extends JavaPlugin {
 				return true;
 			}
 			else if (args[0].equalsIgnoreCase("on")) {
-				if (!confirmed && !getServer().getScheduler().getPendingTasks().contains(monitor)) {
+				if (screen != null && !confirmed && !getServer().getScheduler().getPendingTasks().contains(monitor)) {
 					updatePixels(screen.getPixels());
 					startMonitoring();
 				}
@@ -66,6 +69,53 @@ public final class Jumbotron extends JavaPlugin {
 					arduino.closePort();
 				}
 				return true;
+			}
+			else if (args[0].equalsIgnoreCase("set") && sender instanceof Player) {
+				if (getServer().getPluginManager().isPluginEnabled("WorldEdit")) {
+					Player player = (Player) sender;
+					
+					WorldEditPlugin we = (WorldEditPlugin) getServer().getPluginManager().getPlugin("WorldEdit");
+					
+					if (we.getSelection(player) == null) {
+						getLogger().info("Player has no selection.");
+						return true;
+					}
+					
+					float yaw = player.getLocation().getYaw() % 360;
+					if (yaw < 0) {
+						yaw += 360;
+					}
+					Dir dir;
+					if (yaw < 45 || yaw > 315) {
+						dir = Dir.SOUTH;
+					} else if (yaw < 135) {
+						dir = Dir.WEST;
+					} else if (yaw < 225) {
+						dir = Dir.NORTH;
+					} else {
+						dir = Dir.EAST;
+					}
+					
+					screen = new BlockGrid(
+							player.getLocation().getWorld(),
+							we.getSelection(player),
+							getConfig().getInt("screen.width"),
+							getConfig().getInt("screen.height"),
+							dir);
+					updatePixels(screen.getPixels());
+					
+					getLogger().info("Set new screen.");
+					getConfig().set("screen.world", player.getLocation().getWorld().getName());
+					getConfig().set("screen.x", screen.x);
+					getConfig().set("screen.y", screen.y);
+					getConfig().set("screen.z", screen.z);
+					getConfig().set("screen.width", screen.w);
+					getConfig().set("screen.height", screen.h);
+					getConfig().set("screen.view-direction", dir.toString());
+					saveConfig();
+					
+					return true;
+				}
 			}
 		}
 		return false;
@@ -86,6 +136,7 @@ public final class Jumbotron extends JavaPlugin {
 	
 	void updatePixels(byte[][] pixels) {
 		for (byte[] p : pixels) {
+			//getLogger().info("Adding pixel to queue at "+p[0]+","+p[1]+": "+p[2]+","+p[3]+","+p[4]);
 			pixelQueue.add(p);
 		}
 		if (confirmed) {

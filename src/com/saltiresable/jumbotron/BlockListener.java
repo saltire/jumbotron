@@ -16,32 +16,36 @@ public class BlockListener implements Listener {
 	
 	@EventHandler
 	public void breakBlock(BlockBreakEvent event) {
-		Block block = event.getBlock();
-		int x = block.getX();
-		int y = block.getY();
-		int z = block.getZ();
-		if (plugin.screen.coordsInArea(x, y, z)) {
-			int[] coords = plugin.screen.areaCoords(x, y, z);
-			plugin.updatePixel(new byte[] {
-				(byte) coords[0], (byte) coords[1],
-				(byte) 0, (byte) 0, (byte) 0
-			});
+		if (plugin.screen != null) {
+			Block block = event.getBlock();
+			int x = block.getX();
+			int y = block.getY();
+			int z = block.getZ();
+			if (plugin.screen.coordsInArea(x, y, z)) {
+				int[] coords = plugin.screen.areaCoords(x, y, z);
+				plugin.updatePixel(new byte[] {
+					(byte) coords[0], (byte) coords[1],
+					(byte) 0, (byte) 0, (byte) 0
+				});
+			}
 		}
 	}
 	
 	@EventHandler
 	public void placeBlock(BlockPlaceEvent event) {
-		Block block = event.getBlockPlaced();
-		int x = block.getX();
-		int y = block.getY();
-		int z = block.getZ();
-		if (plugin.screen.coordsInArea(x, y, z)) {
-			int[] color = plugin.screen.getBlockColor(block);
-			int[] coords = plugin.screen.areaCoords(x, y, z);
-			plugin.updatePixel(new byte[] {
-				(byte) coords[0], (byte) coords[1],
-				(byte) color[0], (byte) color[1], (byte) color[2]
-			});
+		if (plugin.screen != null) {
+			Block block = event.getBlockPlaced();
+			int x = block.getX();
+			int y = block.getY();
+			int z = block.getZ();
+			if (plugin.screen.coordsInArea(x, y, z)) {
+				int[] color = plugin.screen.getBlockColor(block);
+				int[] coords = plugin.screen.areaCoords(x, y, z);
+				plugin.updatePixel(new byte[] {
+					(byte) coords[0], (byte) coords[1],
+					(byte) color[0], (byte) color[1], (byte) color[2]
+				});
+			}
 		}
 	}
 }

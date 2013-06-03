@@ -5,8 +5,11 @@ screen:
   z: 0
   width: 32
   height: 16
-  direction: east
+  view-direction: north
 arduino:
   port: COM5
-  enable-on-start: true
+  enable-on-start: false
   retry-interval: 2
+display:
+  width: 32
+  height: 16
