@@ -10,7 +10,7 @@ import org.bukkit.material.Wool;
 enum Dir { NORTH, SOUTH, EAST, WEST }
 
 public class BlockGrid {
-	
+
 	World world;
 	int x;
 	int y;
@@ -20,7 +20,7 @@ public class BlockGrid {
 	int maxw;
 	int maxh;
 	Dir dir;
-	
+
 	public BlockGrid(World world, int x, int y, int z, int w, int h, int maxw, int maxh, Dir dir) {
 		this.world = world;
 		this.x = x;
@@ -32,13 +32,13 @@ public class BlockGrid {
 		this.maxh = maxh;
 		this.dir = dir;
 	}
-	
+
 	public BlockGrid(World world, Selection selection, int maxw, int maxh, Dir dir) {
 		this.world = world;
 		this.dir = dir;
 		this.maxw = maxw;
 		this.maxh = maxh;
-		
+
 		Vector min = selection.getNativeMinimumPoint();
 		Vector max = selection.getNativeMaximumPoint();
 		switch (dir) {
@@ -66,13 +66,13 @@ public class BlockGrid {
 		y = max.getBlockY();
 		h = Math.min(maxh, selection.getHeight());
 	}
-	
+
 	public byte[][] getPixels() {
 		byte[][] pixels = new byte[maxw * maxh][];
 		int bx = x, by = y, bz = z;
 		int ou = (maxw - w) / 2;
 		int ov = (maxh - h) / 2;
-		
+
 		for (int v = 0; v < maxh; v++) {
 			by = y - (v - ov);
 			for (int u = 0; u < maxw; u++) {
@@ -136,7 +136,7 @@ public class BlockGrid {
 			return false;
 		}
 	}
-	
+
 	public int[] areaCoords(int bx, int by, int bz) {
 		int ou = (maxw - w) / 2;
 		int ov = (maxh - h) / 2;
@@ -153,5 +153,5 @@ public class BlockGrid {
 			return new int[] {-1, -1};
 		}
 	}
-	
+
 }

@@ -9,20 +9,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 public final class Jumbotron extends JavaPlugin {
-	
+
 	ArduinoJSSC arduino;
 	BukkitTask monitor;
 	boolean confirmed = false;
 	boolean waiting = false;
-	
+
 	BlockGrid screen;
 	ArrayDeque<byte[]> pixelQueue = new ArrayDeque<byte[]>();
-	
+
 	@Override
 	public void onEnable() {
 		getConfig().options().copyDefaults(true);
 		saveConfig();
-		
+
 		if (getServer().getWorld(getConfig().getString("screen.world")) == null) {
 			getLogger().warning("No valid world specified!");
 		} else {
@@ -38,15 +38,15 @@ public final class Jumbotron extends JavaPlugin {
 					Dir.valueOf(getConfig().getString("screen.view-direction").toUpperCase()));
 			updatePixels(screen.getPixels());
 		}
-		
+
 		getServer().getPluginManager().registerEvents(new BlockListener(this), this);
-		
-		arduino = new ArduinoJSSC(this, getConfig().getString("arduino.port"));	
+
+		arduino = new ArduinoJSSC(this, getConfig().getString("arduino.port"));
 		if (screen != null && getConfig().getBoolean("arduino.enable-on-start")) {
 			startMonitoring();
 		}
 	}
-	
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if (cmd.getName().equalsIgnoreCase("jumbo") && args.length > 0) {
@@ -73,14 +73,14 @@ public final class Jumbotron extends JavaPlugin {
 			else if (args[0].equalsIgnoreCase("set") && sender instanceof Player) {
 				if (getServer().getPluginManager().isPluginEnabled("WorldEdit")) {
 					Player player = (Player) sender;
-					
+
 					WorldEditPlugin we = (WorldEditPlugin) getServer().getPluginManager().getPlugin("WorldEdit");
-					
+
 					if (we.getSelection(player) == null) {
 						getLogger().info("Player has no selection.");
 						return true;
 					}
-					
+
 					float yaw = player.getLocation().getYaw() % 360;
 					if (yaw < 0) {
 						yaw += 360;
@@ -95,15 +95,15 @@ public final class Jumbotron extends JavaPlugin {
 					} else {
 						dir = Dir.EAST;
 					}
-					
+
 					screen = new BlockGrid(
 							player.getLocation().getWorld(),
 							we.getSelection(player),
-							getConfig().getInt("screen.width"),
-							getConfig().getInt("screen.height"),
+							getConfig().getInt("display.width"),
+							getConfig().getInt("display.height"),
 							dir);
 					updatePixels(screen.getPixels());
-					
+
 					getLogger().info("Set new screen.");
 					getConfig().set("screen.world", player.getLocation().getWorld().getName());
 					getConfig().set("screen.x", screen.x);
@@ -113,19 +113,19 @@ public final class Jumbotron extends JavaPlugin {
 					getConfig().set("screen.height", screen.h);
 					getConfig().set("screen.view-direction", dir.toString());
 					saveConfig();
-					
+
 					return true;
 				}
 			}
 		}
 		return false;
 	}
-	
+
 	private void startMonitoring() {
 		monitor = new SerialMonitor(this).runTaskTimer(this, 0,
 				getConfig().getInt("arduino.retry-interval") * 20);
 	}
-	
+
 	void updatePixel(byte[] p) {
 		//getLogger().info("Adding pixel to queue at "+p[0]+","+p[1]);
 		pixelQueue.add(p);
@@ -133,7 +133,7 @@ public final class Jumbotron extends JavaPlugin {
 			sendNextPixel();
 		}
 	}
-	
+
 	void updatePixels(byte[][] pixels) {
 		for (byte[] p : pixels) {
 			//getLogger().info("Adding pixel to queue at "+p[0]+","+p[1]+": "+p[2]+","+p[3]+","+p[4]);
@@ -143,7 +143,7 @@ public final class Jumbotron extends JavaPlugin {
 			sendNextPixel();
 		}
 	}
-	
+
 	void sendNextPixel() {
 		if (!confirmed && pixelQueue.size() > 0) {
 			byte[] p = pixelQueue.peek();
@@ -157,7 +157,7 @@ public final class Jumbotron extends JavaPlugin {
 			}
 		}
 	}
-	
+
 	void confirmPixelSent(byte[] coords) {
 		//getLogger().info("Acknowledged pixel update at " + coords[0] + "," + coords[1]);
 		if (!confirmed) {
@@ -168,7 +168,7 @@ public final class Jumbotron extends JavaPlugin {
 	    	sendNextPixel();
 		}
 	}
-	
+
 	@Override
 	public void onDisable() {
 		if (arduino != null) {

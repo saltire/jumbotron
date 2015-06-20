@@ -7,13 +7,13 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 
 public class BlockListener implements Listener {
-	
+
 	Jumbotron plugin;
 
 	public BlockListener(Jumbotron plugin) {
 		this.plugin = plugin;
 	}
-	
+
 	@EventHandler
 	public void breakBlock(BlockBreakEvent event) {
 		if (plugin.screen != null) {
@@ -30,7 +30,7 @@ public class BlockListener implements Listener {
 			}
 		}
 	}
-	
+
 	@EventHandler
 	public void placeBlock(BlockPlaceEvent event) {
 		if (plugin.screen != null) {

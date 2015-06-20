@@ -22,7 +22,7 @@ void loop() {
     uint8_t r = Serial.read();
     uint8_t g = Serial.read();
     uint8_t b = Serial.read();
-    
+
     matrix.drawPixel(x, y, matrix.Color888(r, g, b, 1));
 
     byte coords[] = {byte(x), byte(y)};

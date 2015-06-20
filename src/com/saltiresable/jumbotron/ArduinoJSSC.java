@@ -6,20 +6,20 @@ import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 
 public class ArduinoJSSC implements SerialPortEventListener {
-	
+
 	SerialPort serialPort;
 	Jumbotron plugin;
 	int baudRate = 9600;
-	
+
 	public ArduinoJSSC(Jumbotron plugin, String portName) {
 		serialPort = new SerialPort(portName);
 		this.plugin = plugin;
 	}
-	
+
 	public boolean portOpen() {
 		return serialPort.isOpened();
 	}
-	
+
 	public boolean openPort() {
 		try {
 			serialPort.openPort();
@@ -31,7 +31,7 @@ public class ArduinoJSSC implements SerialPortEventListener {
 			return false;
 		}
 	}
-	
+
 	public void closePort() {
 		try {
 			serialPort.closePort();
@@ -39,7 +39,7 @@ public class ArduinoJSSC implements SerialPortEventListener {
 			plugin.getLogger().severe(e.getMessage());
 		}
 	}
-	
+
 	@Override
 	public void serialEvent(SerialPortEvent event) {
 		if (event.getEventValue() >= 2) {
@@ -50,7 +50,7 @@ public class ArduinoJSSC implements SerialPortEventListener {
 	        }
         }
 	}
-	
+
 	public boolean sendBytes(byte[] bytes) {
 		if (!serialPort.isOpened()) {
 			return false;
@@ -63,7 +63,7 @@ public class ArduinoJSSC implements SerialPortEventListener {
 			return false;
 		}
 	}
-	
+
 	public void disable() {
 		try {
 			serialPort.closePort();
